@@ -100,14 +100,14 @@ class ApiClient {
   // ==================== DISCOVERY MODULE ====================
 
   /**
-   * Get transit candidates from TESS data
+   * Get transit candidates from database
    */
-  async getTransitCandidates(limit = 50) {
-    return this.request(`/discovery/candidates?limit=${limit}`);
+  async getTransitCandidates(limit = 50, minConfidence = 0.0) {
+    return this.request(`/discovery/candidates?limit=${limit}&min_confidence=${minConfidence}`);
   }
 
   /**
-   * Search TESS data for transits
+   * Search TESS data for transits (background task)
    */
   async searchTransits(sector, camera, ccd) {
     return this.request(
@@ -117,10 +117,24 @@ class ApiClient {
   }
 
   /**
-   * Get candidate details
+   * Get detailed information about a specific candidate
    */
   async getCandidateDetails(candidateId) {
     return this.request(`/discovery/candidate/${candidateId}`);
+  }
+
+  /**
+   * Get discovery module statistics
+   */
+  async getDiscoveryStatistics() {
+    return this.request('/discovery/statistics');
+  }
+
+  /**
+   * Get ML feature importance from vetting classifier
+   */
+  async getFeatureImportance() {
+    return this.request('/discovery/feature-importance');
   }
 
   // ==================== GENERAL ====================
@@ -129,7 +143,8 @@ class ApiClient {
    * Health check
    */
   async healthCheck() {
-    return this.request('/health', { baseUrl: 'http://localhost:8000' });
+    const response = await fetch('http://localhost:8000/health');
+    return response.json();
   }
 }
 

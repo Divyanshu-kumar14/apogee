@@ -24,7 +24,7 @@ FastAPI Backend
 Shared Alerts Table (Integration Proof)
 ```
 
-## 📋 Current Status: Phase 2 Complete ✅
+## 📋 Current Status: Phase 3 Complete ✅
 
 ### Phase 0: Scaffolding ✅ COMPLETE
 - ✅ Project directory structure created
@@ -54,7 +54,18 @@ Shared Alerts Table (Integration Proof)
 - ✅ Fault injection controls for demo
 - ✅ Anomaly detection statistics
 
-**Next Steps:** Phase 3 - Discovery Module (TESS data + BLS + ML vetting)
+### Phase 3: Discovery Module ✅ COMPLETE
+- ✅ TESS data service with mock light curve generation
+- ✅ BLS periodogram for transit detection
+- ✅ Random Forest ML vetting classifier (MANDATORY ML)
+- ✅ Feature extraction (13+ features)
+- ✅ Discovery router with all endpoints
+- ✅ Background task for non-blocking search
+- ✅ DiscoveryPanel.jsx with full UI
+- ✅ Statistics and filtering
+- ✅ **NOT integrated with alerts** (intentional design)
+
+**Next Steps:** Phase 4 - Polish & IBM Integrations (Granite LLM, Carbon Design System)
 
 ## 🚀 Setup Instructions
 
@@ -111,12 +122,14 @@ apogee/
 │   │   ├── routers/          # API endpoints
 │   │   │   ├── health.py     # Health Monitor API ✅
 │   │   │   ├── debris.py     # Debris Risk API ✅
-│   │   │   └── discovery.py  # Discovery Module API (TODO)
+│   │   │   └── discovery.py  # Discovery Module API ✅
 │   │   ├── services/         # Business logic
 │   │   │   ├── telemetry.py  # Telemetry simulator ✅
 │   │   │   ├── anomaly.py    # IsolationForest detector ✅
 │   │   │   ├── celestrak.py  # TLE fetching ✅
-│   │   │   └── orbital.py    # SGP4 propagation ✅
+│   │   │   ├── orbital.py    # SGP4 propagation ✅
+│   │   │   ├── tess.py       # TESS data & BLS ✅
+│   │   │   └── vetting.py    # Random Forest vetting ✅
 │   │   ├── schemas/          # Pydantic models (to be implemented)
 │   │   ├── database.py       # Database configuration ✅
 │   │   ├── models.py         # SQLAlchemy models ✅
@@ -129,7 +142,7 @@ apogee/
 │   │   ├── components/       # React components
 │   │   │   ├── HealthPanel.jsx    # ✅ Live telemetry
 │   │   │   ├── DebrisPanel.jsx    # ✅ Risk table
-│   │   │   └── DiscoveryPanel.jsx # (TODO)
+│   │   │   └── DiscoveryPanel.jsx # ✅ Transit candidates
 │   │   ├── services/         
 │   │   │   └── api.js        # API client ✅
 │   │   ├── hooks/            # Custom React hooks (to be implemented)
@@ -148,6 +161,7 @@ apogee/
 ├── IMPLEMENTATION_PLAN.md    # Detailed implementation plan
 ├── PHASE1_COMPLETE.md       # Phase 1 testing guide ✅
 ├── PHASE2_COMPLETE.md       # Phase 2 testing guide ✅
+├── PHASE3_COMPLETE.md       # Phase 3 testing guide ✅
 └── README.md                # This file
 ```
 
@@ -158,7 +172,7 @@ apogee/
 1. **telemetry_reading** - Simulated spacecraft telemetry ✅
 2. **tracked_object** - Orbital objects from CelesTrak ✅
 3. **conjunction_risk** - Computed collision risks ✅
-4. **transit_candidate** - TESS exoplanet detections (TODO)
+4. **transit_candidate** - TESS exoplanet detections ✅
 5. **alerts** - Shared alerts table (INTEGRATION PROOF) ✅
 
 The `alerts` table is the core integration proof, storing both health anomalies and debris conjunctions with `response_category` tags.
@@ -170,14 +184,14 @@ The `alerts` table is the core integration proof, storing both health anomalies 
 - SQLAlchemy - ORM for database
 - SQLite - Zero-ops database
 - sgp4 - Orbital propagation ✅
-- scikit-learn - ML (IsolationForest ✅, Random Forest for Phase 3)
-- lightkurve - TESS data processing (Phase 3)
+- scikit-learn - ML (IsolationForest ✅, Random Forest ✅)
+- astropy - BLS periodogram ✅
+- numpy - Numerical computing ✅
 
 ### Frontend
 - React 18 - UI framework
 - Vite - Build tool
 - Tailwind CSS - Styling
-- Recharts - Data visualization (Phase 3)
 - WebSocket - Real-time streaming ✅
 
 ### Additional (Phase 4)
@@ -206,16 +220,17 @@ The `alerts` table is the core integration proof, storing both health anomalies 
 - WebSocket streaming
 - Unified alerts feed
 
-### Phase 3: Discovery Module (Next - 3-4 days)
-- TESS data caching
+### Phase 3: Discovery Module ✅ COMPLETE
+- TESS data service
 - BLS periodogram
-- ML vetting classifier
-- Light curve visualization
+- Random Forest ML vetting
+- Transit candidates UI
 
-### Phase 4: Polish (2-3 days, time-permitting)
+### Phase 4: Polish (Next - 2-3 days)
 - IBM Granite integration
-- UI polish libraries
-- Stretch goals
+- Carbon Design System
+- UI polish and animations
+- Advanced visualizations
 
 ### Phase 5: Testing & Demo (1-2 days)
 - End-to-end testing
@@ -226,7 +241,7 @@ The `alerts` table is the core integration proof, storing both health anomalies 
 
 1. **IBM Bob must be core build tool** (eligibility requirement) ✅
 2. **IsolationForest is mandatory** (no z-score fallback) ✅
-3. **ML vetting required for Discovery** (BLS alone is not ML) - Phase 3
+3. **ML vetting required for Discovery** (BLS alone is not ML) ✅
 4. **Unified alerts feed is integration proof** (don't skip) ✅
 5. **All disclaimers must be visible** (TLE uncertainty ✅, simulated telemetry ✅)
 
@@ -235,8 +250,8 @@ The `alerts` table is the core integration proof, storing both health anomalies 
 - [x] Phase 0: Project scaffolding
 - [x] Phase 1: Debris risk module with real data
 - [x] Phase 2: Health monitor with IsolationForest
+- [x] Phase 3: Discovery module with ML vetting
 - [x] Unified alerts feed (integration proof)
-- [ ] Phase 3: Discovery module with ML vetting
 - [ ] Phase 4: Polish and IBM integrations
 - [ ] Phase 5: Demo preparation
 
@@ -244,6 +259,7 @@ The `alerts` table is the core integration proof, storing both health anomalies 
 
 - [Phase 1 Testing Guide](./PHASE1_COMPLETE.md) - Debris Risk Module
 - [Phase 2 Testing Guide](./PHASE2_COMPLETE.md) - Health Monitor
+- [Phase 3 Testing Guide](./PHASE3_COMPLETE.md) - Discovery Module
 
 ## 🚀 Quick Start (After Setup)
 
@@ -261,7 +277,7 @@ The `alerts` table is the core integration proof, storing both health anomalies 
    - Navigate to http://localhost:5173
    - Try the Debris Risk panel (Phase 1)
    - Try the Health Monitor panel (Phase 2)
-   - Inject faults to see anomaly detection
+   - Try the Discovery Module panel (Phase 3)
 
 ## 🔗 Resources
 
