@@ -2,13 +2,15 @@
 APOGEE - Main FastAPI Application
 Mission awareness dashboard for space operations.
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 from .database import engine, Base, SessionLocal
 from .routers import health, debris, discovery, alerts
 import logging
 import asyncio
+import time
 
 # Configure logging
 logging.basicConfig(
@@ -63,6 +65,32 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan
 )
+
+# Add performance monitoring middleware
+@app.middleware("http")
+async def add_performance_monitoring(request: Request, call_next):
+    """
+    Monitor API response times and log slow requests.
+    Adds X-Process-Time header to all responses.
+    """
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    
+    # Add performance header
+    response.headers["X-Process-Time"] = f"{process_time:.4f}"
+    
+    # Log slow requests (> 1 second)
+    if process_time > 1.0:
+        logger.warning(
+            f"Slow request: {request.method} {request.url.path} "
+            f"took {process_time:.2f}s"
+        )
+    
+    return response
+
+# Add GZip compression for responses > 1KB
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Configure CORS for local development
 app.add_middleware(

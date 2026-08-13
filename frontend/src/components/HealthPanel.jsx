@@ -1,23 +1,110 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import api from '../services/api';
 import AlertExplanation from './shared/AlertExplanation';
+import { useWebSocket, throttle } from '../hooks/useWebSocket';
+
+// Memoized SeverityBadge component
+const SeverityBadge = memo(({ severity }) => {
+  const colors = {
+    nominal: 'bg-green-100 text-green-800',
+    watch: 'bg-yellow-100 text-yellow-800',
+    critical: 'bg-red-100 text-red-800'
+  };
+  return (
+    <span className={`px-2 py-1 rounded text-xs font-semibold ${colors[severity] || colors.nominal}`}>
+      {severity.toUpperCase()}
+    </span>
+  );
+});
+SeverityBadge.displayName = 'SeverityBadge';
+
+// Memoized MetricCard component
+const MetricCard = memo(({ metricName, data }) => {
+  const displayName = metricName
+    .split('_')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+
+  return (
+    <div className="bg-white rounded-lg shadow p-4">
+      <div className="flex items-start justify-between mb-2">
+        <h3 className="text-sm font-medium text-gray-700">{displayName}</h3>
+        <SeverityBadge severity={data.severity} />
+      </div>
+      <div className="mt-2">
+        <div className="text-3xl font-bold text-gray-900">
+          {data.value.toFixed(2)}
+        </div>
+        <div className="text-sm text-gray-500">{data.unit}</div>
+      </div>
+      {data.normal_range && (
+        <div className="mt-3 text-xs text-gray-500">
+          Normal: {data.normal_range[0]} - {data.normal_range[1]} {data.unit}
+        </div>
+      )}
+      {data.anomaly_score !== undefined && (
+        <div className="mt-2 text-xs text-gray-600">
+          Anomaly Score: {data.anomaly_score.toFixed(3)}
+        </div>
+      )}
+    </div>
+  );
+});
+MetricCard.displayName = 'MetricCard';
+
+// Memoized AlertItem component
+const AlertItem = memo(({ alert, onExplain }) => {
+  return (
+    <div className="p-4 hover:bg-gray-50">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <SeverityBadge severity={alert.severity} />
+            <span className="text-xs text-gray-500">
+              {alert.source === 'health' ? '🏥 Health' : '🛰️ Debris'}
+            </span>
+            <span className="text-xs text-gray-500">
+              {alert.response_category}
+            </span>
+          </div>
+          <p className="text-sm text-gray-900">{alert.message}</p>
+          {alert.explained && alert.explanation && (
+            <p className="text-xs text-gray-600 mt-1">
+              💡 Explanation available
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2 ml-4">
+          <div className="text-xs text-gray-500">
+            {new Date(alert.timestamp).toLocaleTimeString()}
+          </div>
+          <button
+            onClick={() => onExplain(alert)}
+            className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
+          >
+            🤖 Explain
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+AlertItem.displayName = 'AlertItem';
 
 const HealthPanel = () => {
   const [healthStatus, setHealthStatus] = useState(null);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [wsConnected, setWsConnected] = useState(false);
   const [faultInjection, setFaultInjection] = useState({
     type: 'battery_drift',
     metric: 'battery_voltage',
     duration: 60
   });
   const [selectedAlert, setSelectedAlert] = useState(null);
-  const wsRef = useRef(null);
 
   // Fetch initial health status
-  const fetchHealthStatus = async () => {
+  const fetchHealthStatus = useCallback(async () => {
     try {
       const data = await api.getHealthStatus();
       setHealthStatus(data);
@@ -28,39 +115,28 @@ const HealthPanel = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Fetch unified alerts
-  const fetchAlerts = async () => {
+  const fetchAlerts = useCallback(async () => {
     try {
       const data = await api.getUnifiedAlerts();
       setAlerts(data.alerts || []);
     } catch (err) {
       console.error('Failed to fetch alerts:', err);
     }
-  };
+  }, []);
 
-  // WebSocket connection for live telemetry
-  useEffect(() => {
-    fetchHealthStatus();
-    fetchAlerts();
-
-    // Connect to WebSocket
-    const ws = new WebSocket('ws://localhost:8000/api/health/ws/stream?spacecraft_id=25544');
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log('WebSocket connected');
-      setWsConnected(true);
-    };
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      
+  // Throttled telemetry update handler (max 10 updates/sec)
+  const handleTelemetryUpdate = useMemo(
+    () => throttle((data) => {
       if (data.type === 'telemetry_update') {
-        // Update health status with new reading
         setHealthStatus(prev => {
           if (!prev) return prev;
+          
+          // Only update if value actually changed
+          const currentValue = prev.metrics[data.metric_name]?.value;
+          if (currentValue === data.value) return prev;
           
           const newMetrics = { ...prev.metrics };
           newMetrics[data.metric_name] = {
@@ -91,28 +167,29 @@ const HealthPanel = () => {
           fetchAlerts();
         }
       }
-    };
+    }, 100),
+    [fetchAlerts]
+  );
 
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setWsConnected(false);
-    };
+  // WebSocket connection with automatic reconnection
+  const { isConnected } = useWebSocket(
+    'ws://localhost:8000/api/health/ws/stream?spacecraft_id=25544',
+    {
+      onMessage: handleTelemetryUpdate,
+      onError: (error) => console.error('WebSocket error:', error),
+      reconnectInterval: 1000,
+      maxReconnectAttempts: 5
+    }
+  );
 
-    ws.onclose = () => {
-      console.log('WebSocket disconnected');
-      setWsConnected(false);
-    };
-
-    // Cleanup
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, []);
+  // Initial data fetch
+  useEffect(() => {
+    fetchHealthStatus();
+    fetchAlerts();
+  }, [fetchHealthStatus, fetchAlerts]);
 
   // Inject fault for demo
-  const handleInjectFault = async () => {
+  const handleInjectFault = useCallback(async () => {
     try {
       await api.injectFault(
         faultInjection.type,
@@ -123,21 +200,31 @@ const HealthPanel = () => {
     } catch (err) {
       alert('Failed to inject fault: ' + err.message);
     }
-  };
+  }, [faultInjection]);
 
-  // Severity badge component
-  const SeverityBadge = ({ severity }) => {
-    const colors = {
-      nominal: 'bg-green-100 text-green-800',
-      watch: 'bg-yellow-100 text-yellow-800',
-      critical: 'bg-red-100 text-red-800'
-    };
-    return (
-      <span className={`px-2 py-1 rounded text-xs font-semibold ${colors[severity] || colors.nominal}`}>
-        {severity.toUpperCase()}
-      </span>
-    );
-  };
+  // Memoize alert explanation handler
+  const handleExplainAlert = useCallback((alert) => {
+    setSelectedAlert(alert);
+  }, []);
+
+  // Memoize close modal handler
+  const handleCloseModal = useCallback(() => {
+    setSelectedAlert(null);
+  }, []);
+
+  // Memoize metrics array for rendering
+  const metricsArray = useMemo(() => {
+    if (!healthStatus?.metrics) return [];
+    return Object.entries(healthStatus.metrics);
+  }, [healthStatus?.metrics]);
+
+  // Memoize alert statistics
+  const alertStats = useMemo(() => {
+    return alerts.reduce((acc, alert) => {
+      acc[alert.severity] = (acc[alert.severity] || 0) + 1;
+      return acc;
+    }, { critical: 0, watch: 0, nominal: 0 });
+  }, [alerts]);
 
   if (loading) {
     return (
@@ -174,9 +261,9 @@ const HealthPanel = () => {
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
               <span className="text-sm text-gray-600">
-                {wsConnected ? 'Live' : 'Disconnected'}
+                {isConnected ? 'Live' : 'Disconnected'}
               </span>
             </div>
             <SeverityBadge severity={healthStatus?.overall_status || 'nominal'} />
@@ -186,31 +273,8 @@ const HealthPanel = () => {
 
       {/* Telemetry Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {healthStatus?.metrics && Object.entries(healthStatus.metrics).map(([metric, data]) => (
-          <div key={metric} className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-start justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-700">
-                {metric.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-              </h3>
-              <SeverityBadge severity={data.severity} />
-            </div>
-            <div className="mt-2">
-              <div className="text-3xl font-bold text-gray-900">
-                {data.value.toFixed(2)}
-              </div>
-              <div className="text-sm text-gray-500">{data.unit}</div>
-            </div>
-            {data.normal_range && (
-              <div className="mt-3 text-xs text-gray-500">
-                Normal: {data.normal_range[0]} - {data.normal_range[1]} {data.unit}
-              </div>
-            )}
-            {data.anomaly_score !== undefined && (
-              <div className="mt-2 text-xs text-gray-600">
-                Anomaly Score: {data.anomaly_score.toFixed(3)}
-              </div>
-            )}
-          </div>
+        {metricsArray.map(([metricName, data]) => (
+          <MetricCard key={metricName} metricName={metricName} data={data} />
         ))}
       </div>
 
@@ -262,12 +326,30 @@ const HealthPanel = () => {
       {/* Unified Alerts Feed */}
       <div className="bg-white rounded-lg shadow">
         <div className="p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">
-            🚨 Unified Alerts Feed
-          </h3>
-          <p className="text-sm text-gray-500 mt-1">
-            Combined health anomalies and debris conjunctions (Integration Proof)
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                🚨 Unified Alerts Feed
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Combined health anomalies and debris conjunctions (Integration Proof)
+              </p>
+            </div>
+            {alerts.length > 0 && (
+              <div className="flex items-center gap-2 text-xs">
+                {alertStats.critical > 0 && (
+                  <span className="px-2 py-1 bg-red-100 text-red-800 rounded">
+                    {alertStats.critical} Critical
+                  </span>
+                )}
+                {alertStats.watch > 0 && (
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
+                    {alertStats.watch} Watch
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
           {alerts.length === 0 ? (
@@ -276,38 +358,11 @@ const HealthPanel = () => {
             </div>
           ) : (
             alerts.map((alert) => (
-              <div key={alert.id} className="p-4 hover:bg-gray-50">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <SeverityBadge severity={alert.severity} />
-                      <span className="text-xs text-gray-500">
-                        {alert.source === 'health' ? '🏥 Health' : '🛰️ Debris'}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {alert.response_category}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-900">{alert.message}</p>
-                    {alert.explained && alert.explanation && (
-                      <p className="text-xs text-gray-600 mt-1">
-                        💡 Explanation available
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <div className="text-xs text-gray-500">
-                      {new Date(alert.timestamp).toLocaleTimeString()}
-                    </div>
-                    <button
-                      onClick={() => setSelectedAlert(alert)}
-                      className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
-                    >
-                      🤖 Explain
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <AlertItem 
+                key={alert.id} 
+                alert={alert} 
+                onExplain={handleExplainAlert}
+              />
             ))
           )}
         </div>
@@ -340,7 +395,7 @@ const HealthPanel = () => {
       {selectedAlert && (
         <AlertExplanation
           alert={selectedAlert}
-          onClose={() => setSelectedAlert(null)}
+          onClose={handleCloseModal}
         />
       )}
     </div>

@@ -60,16 +60,21 @@ async def telemetry_generation_task(spacecraft_id: str, db: Session):
     
     logger.info(f"Telemetry generation started for spacecraft {spacecraft_id}")
     
+    batch_size = 10
+    batch_count = 0
+    
     try:
         while True:
             # Generate readings for all metrics
+            timestamp = datetime.utcnow()
+            
             for metric_name in TELEMETRY_METRICS.keys():
                 value = simulator.generate_reading(metric_name)
                 
-                # Store in database
+                # Store in database (batched)
                 reading = TelemetryReading(
                     spacecraft_id=spacecraft_id,
-                    timestamp=datetime.utcnow(),
+                    timestamp=timestamp,
                     metric_name=metric_name,
                     value=value
                 )
@@ -90,7 +95,7 @@ async def telemetry_generation_task(spacecraft_id: str, db: Session):
                             f"value={value:.2f} {TELEMETRY_METRICS[metric_name]['unit']}, "
                             f"anomaly_score={anomaly_result['anomaly_score']:.3f}"
                         ),
-                        timestamp=datetime.utcnow(),
+                        timestamp=timestamp,
                         explained=False
                     )
                     db.add(alert)
@@ -102,11 +107,16 @@ async def telemetry_generation_task(spacecraft_id: str, db: Session):
                     "metric_name": metric_name,
                     "value": value,
                     "unit": TELEMETRY_METRICS[metric_name]["unit"],
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": timestamp.isoformat(),
                     "anomaly": anomaly_result
                 })
             
-            db.commit()
+            # Batch commit every 10 iterations (40 readings)
+            batch_count += 1
+            if batch_count >= batch_size:
+                db.commit()
+                batch_count = 0
+                logger.debug(f"Committed batch of {batch_size * len(TELEMETRY_METRICS)} readings")
             
             # Wait 2-5 seconds between readings
             await asyncio.sleep(np.random.uniform(2, 5))

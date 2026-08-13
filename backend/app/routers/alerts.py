@@ -110,3 +110,70 @@ async def get_alert(
         "explained": alert.explained,
         "explanation": alert.explanation
     }
+
+@router.get("/")
+async def list_alerts(
+    skip: int = 0,
+    limit: int = 50,
+    severity: str = None,
+    source: str = None,
+    spacecraft_id: str = None,
+    db: Session = Depends(get_db)
+):
+    """
+    List alerts with pagination and filtering.
+    
+    Args:
+        skip: Number of records to skip (default: 0)
+        limit: Maximum number of records to return (default: 50, max: 100)
+        severity: Filter by severity (optional)
+        source: Filter by source (optional)
+        spacecraft_id: Filter by spacecraft ID (optional)
+        
+    Returns:
+        Paginated list of alerts with metadata
+    """
+    # Enforce maximum limit
+    limit = min(limit, 100)
+    
+    # Build query with filters
+    query = db.query(Alert)
+    
+    if severity:
+        query = query.filter(Alert.severity == severity)
+    if source:
+        query = query.filter(Alert.source == source)
+    if spacecraft_id:
+        query = query.filter(Alert.spacecraft_id == spacecraft_id)
+    
+    # Get total count for pagination metadata
+    total = query.count()
+    
+    # Apply pagination and ordering
+    alerts = query.order_by(Alert.timestamp.desc()).offset(skip).limit(limit).all()
+    
+    # Convert to dict
+    alert_list = [
+        {
+            "id": alert.id,
+            "spacecraft_id": alert.spacecraft_id,
+            "source": alert.source,
+            "response_category": alert.response_category,
+            "severity": alert.severity,
+            "message": alert.message,
+            "timestamp": alert.timestamp.isoformat(),
+            "explained": alert.explained,
+            "explanation": alert.explanation if alert.explained else None
+        }
+        for alert in alerts
+    ]
+    
+    return {
+        "alerts": alert_list,
+        "pagination": {
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "has_more": (skip + limit) < total
+        }
+    }

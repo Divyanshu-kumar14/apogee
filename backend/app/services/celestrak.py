@@ -9,6 +9,7 @@ import os
 from datetime import datetime
 from typing import List, Dict, Optional
 import logging
+from .cache import cache_tle_data
 
 logger = logging.getLogger(__name__)
 
@@ -25,27 +26,29 @@ class CelesTrakService:
         os.makedirs(self.CACHE_DIR, exist_ok=True)
         logger.info(f"CelesTrak cache directory: {self.CACHE_DIR}")
     
+    @cache_tle_data
     def fetch_spacecraft_tle(self, norad_id: int, use_cache: bool = True) -> Optional[Dict]:
         """
         Fetch TLE for a specific spacecraft by NORAD ID.
+        Now with automatic memory caching (1 hour TTL).
         
         Args:
             norad_id: NORAD catalog number
-            use_cache: If True, check cache before making API call
+            use_cache: If True, check file cache before making API call
             
         Returns:
             Dictionary with TLE data or None if not found
         """
         cache_file = os.path.join(self.CACHE_DIR, f"spacecraft_{norad_id}.json")
         
-        # Check cache first
+        # Check file cache first
         if use_cache and os.path.exists(cache_file):
-            logger.info(f"Loading spacecraft {norad_id} from cache")
+            logger.info(f"Loading spacecraft {norad_id} from file cache")
             with open(cache_file, 'r') as f:
                 return json.load(f)
         
         # Fetch from API
-        logger.info(f"Fetching spacecraft {norad_id} from CelesTrak")
+        logger.info(f"Fetching spacecraft {norad_id} from CelesTrak API")
         try:
             params = {
                 "CATNR": norad_id,
@@ -68,7 +71,7 @@ class CelesTrakService:
             tle_data['fetched_at'] = datetime.utcnow().isoformat()
             tle_data['norad_id'] = norad_id
             
-            # Cache the result
+            # Cache the result to file
             with open(cache_file, 'w') as f:
                 json.dump(tle_data, f, indent=2)
             
