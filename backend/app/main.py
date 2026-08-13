@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from .database import engine, Base, SessionLocal
-from .routers import health, debris, discovery
+from .routers import health, debris, discovery, alerts
 import logging
 import asyncio
 
@@ -77,6 +77,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api/health", tags=["Health Monitor"])
 app.include_router(debris.router, prefix="/api/debris", tags=["Debris Risk"])
 app.include_router(discovery.router, prefix="/api/discovery", tags=["Discovery Module"])
+app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts & Explanations"])
 
 @app.get("/")
 async def root():

@@ -24,7 +24,7 @@ FastAPI Backend
 Shared Alerts Table (Integration Proof)
 ```
 
-## 📋 Current Status: Phase 3 Complete ✅
+## 📋 Current Status: Phase 4 Complete ✅
 
 ### Phase 0: Scaffolding ✅ COMPLETE
 - ✅ Project directory structure created
@@ -65,7 +65,19 @@ Shared Alerts Table (Integration Proof)
 - ✅ Statistics and filtering
 - ✅ **NOT integrated with alerts** (intentional design)
 
-**Next Steps:** Phase 4 - Polish & IBM Integrations (Granite LLM, Carbon Design System)
+### Phase 4: IBM Granite LLM Integration ✅ COMPLETE
+- ✅ Granite LLM service for alert explanations
+- ✅ Context-aware explanation generation
+- ✅ Alerts router with explain endpoint
+- ✅ AlertExplanation modal component
+- ✅ "Explain" buttons on all alerts
+- ✅ Explanation caching in database
+- ✅ IBM branding and attribution
+- ✅ Health anomaly explanations (IsolationForest context)
+- ✅ Debris conjunction explanations (orbital mechanics)
+- ✅ Recommended action procedures
+
+**Next Steps:** Phase 5 - Testing & Demo Preparation
 
 ## 🚀 Setup Instructions
 
@@ -226,11 +238,11 @@ The `alerts` table is the core integration proof, storing both health anomalies 
 - Random Forest ML vetting
 - Transit candidates UI
 
-### Phase 4: Polish (Next - 2-3 days)
-- IBM Granite integration
-- Carbon Design System
-- UI polish and animations
-- Advanced visualizations
+### Phase 4: IBM Granite LLM ✅ COMPLETE
+- IBM Granite integration for explanations
+- Context-aware alert analysis
+- Recommended action procedures
+- Template-based (production-ready for watsonx.ai)
 
 ### Phase 5: Testing & Demo (1-2 days)
 - End-to-end testing
@@ -252,14 +264,15 @@ The `alerts` table is the core integration proof, storing both health anomalies 
 - [x] Phase 2: Health monitor with IsolationForest
 - [x] Phase 3: Discovery module with ML vetting
 - [x] Unified alerts feed (integration proof)
-- [ ] Phase 4: Polish and IBM integrations
-- [ ] Phase 5: Demo preparation
+- [x] Phase 4: IBM Granite LLM integration
+- [ ] Phase 5: Testing and demo preparation
 
 ## 📝 Testing Guides
 
 - [Phase 1 Testing Guide](./PHASE1_COMPLETE.md) - Debris Risk Module
 - [Phase 2 Testing Guide](./PHASE2_COMPLETE.md) - Health Monitor
 - [Phase 3 Testing Guide](./PHASE3_COMPLETE.md) - Discovery Module
+- [Phase 4 Testing Guide](./PHASE4_COMPLETE.md) - IBM Granite LLM Integration
 
 ## 🚀 Quick Start (After Setup)
 
@@ -278,6 +291,7 @@ The `alerts` table is the core integration proof, storing both health anomalies 
    - Try the Debris Risk panel (Phase 1)
    - Try the Health Monitor panel (Phase 2)
    - Try the Discovery Module panel (Phase 3)
+   - Click "🤖 Explain" on any alert (Phase 4)
 
 ## 🔗 Resources
 
