@@ -11,6 +11,7 @@ from astropy.timeseries import BoxLeastSquares
 import requests
 from datetime import datetime
 import json
+from .cache import cache_tess_query
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +33,11 @@ class TESSDataService:
         self.cache_dir = TESS_DATA_DIR
         logger.info(f"TESS data service initialized. Cache dir: {self.cache_dir}")
     
+    @cache_tess_query
     def search_observations(self, sector: int, camera: int, ccd: int) -> List[Dict]:
         """
         Search for TESS observations in a specific sector/camera/CCD.
+        Now with automatic memory caching (24 hour TTL).
         
         Args:
             sector: TESS sector number (1-69+)
