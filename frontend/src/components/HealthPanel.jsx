@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
+import AlertExplanation from './shared/AlertExplanation';
 
 const HealthPanel = () => {
   const [healthStatus, setHealthStatus] = useState(null);
@@ -12,6 +13,7 @@ const HealthPanel = () => {
     metric: 'battery_voltage',
     duration: 60
   });
+  const [selectedAlert, setSelectedAlert] = useState(null);
   const wsRef = useRef(null);
 
   // Fetch initial health status
@@ -287,14 +289,22 @@ const HealthPanel = () => {
                       </span>
                     </div>
                     <p className="text-sm text-gray-900">{alert.message}</p>
-                    {alert.explanation && (
+                    {alert.explained && alert.explanation && (
                       <p className="text-xs text-gray-600 mt-1">
-                        💡 {alert.explanation}
+                        💡 Explanation available
                       </p>
                     )}
                   </div>
-                  <div className="text-xs text-gray-500 ml-4">
-                    {new Date(alert.timestamp).toLocaleTimeString()}
+                  <div className="flex items-center gap-2 ml-4">
+                    <div className="text-xs text-gray-500">
+                      {new Date(alert.timestamp).toLocaleTimeString()}
+                    </div>
+                    <button
+                      onClick={() => setSelectedAlert(alert)}
+                      className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
+                    >
+                      🤖 Explain
+                    </button>
                   </div>
                 </div>
               </div>
@@ -314,6 +324,25 @@ const HealthPanel = () => {
           assuming normal distribution. Anomaly scores closer to -1 indicate higher anomaly likelihood.
         </p>
       </div>
+
+      {/* IBM Granite Info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h4 className="text-sm font-semibold text-blue-900 mb-2">
+          🤖 IBM Granite LLM Explanations
+        </h4>
+        <p className="text-xs text-blue-800">
+          Click "Explain" on any alert to generate a detailed, context-aware explanation using IBM Granite LLM. 
+          The AI provides technical analysis, implications, and recommended actions for each alert.
+        </p>
+      </div>
+
+      {/* Alert Explanation Modal */}
+      {selectedAlert && (
+        <AlertExplanation
+          alert={selectedAlert}
+          onClose={() => setSelectedAlert(null)}
+        />
+      )}
     </div>
   );
 };

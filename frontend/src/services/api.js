@@ -97,6 +97,24 @@ class ApiClient {
     return new WebSocket(wsUrl);
   }
 
+  // ==================== ALERTS & EXPLANATIONS ====================
+
+  /**
+   * Generate explanation for an alert using IBM Granite LLM
+   */
+  async explainAlert(alertId) {
+    return this.request(`/alerts/${alertId}/explain`, {
+      method: 'POST'
+    });
+  }
+
+  /**
+   * Get alert details including explanation
+   */
+  async getAlert(alertId) {
+    return this.request(`/alerts/${alertId}`);
+  }
+
   // ==================== DISCOVERY MODULE ====================
 
   /**
