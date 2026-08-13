@@ -82,17 +82,20 @@ class TransitCandidate(Base):
     __tablename__ = "transit_candidate"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tic_id = Column(Integer, nullable=False, unique=True, index=True)
-    target_name = Column(String(100), nullable=False)
-    period_days = Column(Float, nullable=False)
-    transit_depth = Column(Float, nullable=False)
-    bls_power = Column(Float, nullable=False)
-    ml_vetting_score = Column(Float, nullable=False)  # Classifier confidence 0-1
-    is_likely_planet = Column(Boolean, nullable=False)  # ML classification result
-    flagged_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    tic_id = Column(Integer, nullable=False, index=True)
+    target_name = Column(String(100), nullable=True)
+    sector = Column(Integer, nullable=False)
+    period = Column(Float, nullable=False)
+    epoch = Column(Float, nullable=False)
+    depth = Column(Float, nullable=False)
+    duration = Column(Float, nullable=False)
+    snr = Column(Float, nullable=False)
+    disposition = Column(String(20), nullable=False)
+    vetting_confidence = Column(Float, nullable=False)
+    discovered_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     
     def __repr__(self):
-        return f"<TransitCandidate(tic_id={self.tic_id}, name={self.target_name}, planet={self.is_likely_planet})>"
+        return f"<TransitCandidate(tic_id={self.tic_id}, sector={self.sector}, disposition={self.disposition})>"
 
 
 class Alert(Base):

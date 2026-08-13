@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { debrisAPI } from '../services/api'
+import api from '../services/api'
 
 export default function DebrisPanel({ spacecraftId }) {
   const [risks, setRisks] = useState([])
@@ -18,7 +18,7 @@ export default function DebrisPanel({ spacecraftId }) {
     setLoading(true)
     setError(null)
     try {
-      const data = await debrisAPI.getRisks(spacecraftId)
+      const data = await api.getConjunctionRisks(spacecraftId)
       setRisks(data.risks || [])
       setLastUpdate(new Date())
     } catch (err) {
@@ -33,7 +33,7 @@ export default function DebrisPanel({ spacecraftId }) {
     setRefreshing(true)
     setError(null)
     try {
-      await debrisAPI.refresh(spacecraftId)
+      await api.computeConjunctionRisks(spacecraftId)
       // Wait a bit for background task to complete
       setTimeout(async () => {
         await loadRisks()
