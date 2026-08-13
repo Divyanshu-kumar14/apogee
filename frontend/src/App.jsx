@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
-import HealthPanel from './components/HealthPanel'
-import DebrisPanel from './components/DebrisPanel'
-import DiscoveryPanel from './components/DiscoveryPanel'
+
+// Lazy load panel components for code splitting
+const HealthPanel = lazy(() => import('./components/HealthPanel'))
+const DebrisPanel = lazy(() => import('./components/DebrisPanel'))
+const DiscoveryPanel = lazy(() => import('./components/DiscoveryPanel'))
 
 function App() {
   const [spacecraftId] = useState("25544") // ISS - hardcoded for MVP
@@ -74,9 +76,15 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
-        {activeTab === "health" && <HealthPanel spacecraftId={spacecraftId} />}
-        {activeTab === "debris" && <DebrisPanel spacecraftId={spacecraftId} />}
-        {activeTab === "discovery" && <DiscoveryPanel />}
+        <Suspense fallback={
+          <div className="flex items-center justify-center h-64">
+            <div className="text-gray-500">Loading...</div>
+          </div>
+        }>
+          {activeTab === "health" && <HealthPanel spacecraftId={spacecraftId} />}
+          {activeTab === "debris" && <DebrisPanel spacecraftId={spacecraftId} />}
+          {activeTab === "discovery" && <DiscoveryPanel />}
+        </Suspense>
       </main>
 
       {/* Footer */}

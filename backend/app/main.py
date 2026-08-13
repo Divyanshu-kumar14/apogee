@@ -4,6 +4,7 @@ Mission awareness dashboard for space operations.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 from .database import engine, Base, SessionLocal
 from .routers import health, debris, discovery, alerts
@@ -63,6 +64,9 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan
 )
+
+# Add GZip compression for responses > 1KB
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Configure CORS for local development
 app.add_middleware(
