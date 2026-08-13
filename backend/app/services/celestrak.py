@@ -51,7 +51,10 @@ class CelesTrakService:
                 "CATNR": norad_id,
                 "FORMAT": "JSON"
             }
-            response = requests.get(self.BASE_URL, params=params, timeout=10)
+            headers = {
+                "User-Agent": "ApogeeSpaceDebrisDemo/1.0 (contact@apogee.demo)"
+            }
+            response = requests.get(self.BASE_URL, params=params, headers=headers, timeout=10)
             response.raise_for_status()
             
             data = response.json()
@@ -111,7 +114,10 @@ class CelesTrakService:
                 "GROUP": group,
                 "FORMAT": "JSON"
             }
-            response = requests.get(self.BASE_URL, params=params, timeout=30)
+            headers = {
+                "User-Agent": "ApogeeSpaceDebrisDemo/1.0 (contact@apogee.demo)"
+            }
+            response = requests.get(self.BASE_URL, params=params, headers=headers, timeout=30)
             response.raise_for_status()
             
             data = response.json()
@@ -145,19 +151,21 @@ class CelesTrakService:
         Returns:
             Parsed TLE data with computed orbital parameters
         """
-        # Extract TLE lines
+        # Extract TLE lines if present
         tle_line1 = tle_data.get('TLE_LINE1', '')
         tle_line2 = tle_data.get('TLE_LINE2', '')
         
-        # Parse orbital elements from TLE line 2
-        # Format: https://en.wikipedia.org/wiki/Two-line_element_set
         try:
-            # Inclination (degrees)
-            inclination = float(tle_line2[8:16].strip())
-            
-            # Mean motion (revolutions per day)
-            mean_motion = float(tle_line2[52:63].strip())
-            
+            if tle_line2:
+                # Inclination (degrees)
+                inclination = float(tle_line2[8:16].strip())
+                
+                # Mean motion (revolutions per day)
+                mean_motion = float(tle_line2[52:63].strip())
+            else:
+                inclination = float(tle_data.get('INCLINATION', 0))
+                mean_motion = float(tle_data.get('MEAN_MOTION', 0))
+                
             # Compute approximate orbital period (minutes)
             period_minutes = 1440.0 / mean_motion if mean_motion > 0 else 0
             
@@ -167,14 +175,14 @@ class CelesTrakService:
             # and T is period in seconds
             mu = 398600.4418  # km³/s²
             period_seconds = period_minutes * 60
-            semi_major_axis = (mu * (period_seconds / (2 * 3.14159265359))**2)**(1/3)
+            semi_major_axis = (mu * (period_seconds / (2 * 3.14159265359))**2)**(1/3) if period_seconds > 0 else 0
             
             # Earth radius
             earth_radius = 6371.0  # km
             
             # Approximate apogee and perigee (simplified circular orbit assumption)
             # For more accurate calculation, would need eccentricity
-            altitude = semi_major_axis - earth_radius
+            altitude = semi_major_axis - earth_radius if semi_major_axis > 0 else 500
             
             return {
                 'norad_id': int(tle_data.get('NORAD_CAT_ID', 0)),
@@ -189,7 +197,7 @@ class CelesTrakService:
                 'perigee_km': altitude - 50,  # Rough estimate with buffer
                 'last_updated': datetime.utcnow()
             }
-        except (ValueError, IndexError) as e:
+        except (ValueError, IndexError, TypeError) as e:
             logger.error(f"Error parsing TLE data: {e}")
             # Return basic data even if parsing fails
             return {

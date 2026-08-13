@@ -4,9 +4,11 @@ Mission awareness dashboard for space operations.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .database import engine, Base
+from contextlib import asynccontextmanager
+from .database import engine, Base, SessionLocal
 from .routers import health, debris, discovery
 import logging
+import asyncio
 
 # Configure logging
 logging.basicConfig(
@@ -15,17 +17,51 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
-logger.info("Database tables created successfully")
+# Background task handle
+telemetry_task = None
 
-# Initialize FastAPI app
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager for startup and shutdown events.
+    Starts telemetry generation on startup.
+    """
+    # Startup
+    logger.info("Starting APOGEE application...")
+    
+    # Create database tables
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables created successfully")
+    
+    # Start telemetry generation for ISS (default spacecraft)
+    from .routers.health import telemetry_generation_task
+    db = SessionLocal()
+    
+    global telemetry_task
+    telemetry_task = asyncio.create_task(telemetry_generation_task("25544", db))
+    logger.info("Telemetry generation task started for ISS (NORAD 25544)")
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down APOGEE application...")
+    if telemetry_task:
+        telemetry_task.cancel()
+        try:
+            await telemetry_task
+        except asyncio.CancelledError:
+            pass
+    db.close()
+    logger.info("Telemetry generation task stopped")
+
+# Initialize FastAPI app with lifespan
 app = FastAPI(
     title="APOGEE API",
     description="Mission awareness at every altitude - spacecraft health, debris risk, and scientific discovery",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # Configure CORS for local development
@@ -63,7 +99,8 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "APOGEE API",
-        "database": "connected"
+        "database": "connected",
+        "telemetry_generation": "active" if telemetry_task and not telemetry_task.done() else "inactive"
     }
 
 if __name__ == "__main__":

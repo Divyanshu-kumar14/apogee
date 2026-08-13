@@ -24,9 +24,9 @@ FastAPI Backend
 Shared Alerts Table (Integration Proof)
 ```
 
-## 📋 Current Status: Phase 0 Complete ✅
+## 📋 Current Status: Phase 2 Complete ✅
 
-**Completed:**
+### Phase 0: Scaffolding ✅ COMPLETE
 - ✅ Project directory structure created
 - ✅ Backend scaffolding (FastAPI + SQLAlchemy)
 - ✅ Database models (all 5 tables including shared alerts)
@@ -35,7 +35,26 @@ Shared Alerts Table (Integration Proof)
 - ✅ Placeholder UI components for all three panels
 - ✅ Basic routing and navigation
 
-**Next Steps:** Phase 1 - Debris Risk Module (highest priority)
+### Phase 1: Debris Risk Module ✅ COMPLETE
+- ✅ CelesTrak TLE fetching service with caching
+- ✅ SGP4 orbital propagator with altitude pre-filtering
+- ✅ Risk scoring algorithm (70% distance, 30% velocity)
+- ✅ Background task for non-blocking computation
+- ✅ Sortable risk table UI with severity badges
+- ✅ TLE disclaimer prominently displayed
+- ✅ Integration with shared alerts table
+
+### Phase 2: Health Monitor ✅ COMPLETE
+- ✅ Telemetry simulator with realistic random walk
+- ✅ IsolationForest anomaly detection (MANDATORY - no z-score)
+- ✅ WebSocket streaming for real-time updates
+- ✅ Unified alerts endpoint (INTEGRATION PROOF)
+- ✅ Background telemetry generation task
+- ✅ Live health panel with 4 metrics
+- ✅ Fault injection controls for demo
+- ✅ Anomaly detection statistics
+
+**Next Steps:** Phase 3 - Discovery Module (TESS data + BLS + ML vetting)
 
 ## 🚀 Setup Instructions
 
@@ -90,31 +109,36 @@ apogee/
 ├── backend/
 │   ├── app/
 │   │   ├── routers/          # API endpoints
-│   │   │   ├── health.py     # Health Monitor API
-│   │   │   ├── debris.py     # Debris Risk API
-│   │   │   └── discovery.py  # Discovery Module API
-│   │   ├── services/         # Business logic (to be implemented)
+│   │   │   ├── health.py     # Health Monitor API ✅
+│   │   │   ├── debris.py     # Debris Risk API ✅
+│   │   │   └── discovery.py  # Discovery Module API (TODO)
+│   │   ├── services/         # Business logic
+│   │   │   ├── telemetry.py  # Telemetry simulator ✅
+│   │   │   ├── anomaly.py    # IsolationForest detector ✅
+│   │   │   ├── celestrak.py  # TLE fetching ✅
+│   │   │   └── orbital.py    # SGP4 propagation ✅
 │   │   ├── schemas/          # Pydantic models (to be implemented)
-│   │   ├── database.py       # Database configuration
-│   │   ├── models.py         # SQLAlchemy models
-│   │   └── main.py           # FastAPI app
+│   │   ├── database.py       # Database configuration ✅
+│   │   ├── models.py         # SQLAlchemy models ✅
+│   │   └── main.py           # FastAPI app ✅
 │   ├── data/                 # SQLite database
-│   ├── requirements.txt
-│   └── run.py
+│   ├── requirements.txt      # Dependencies ✅
+│   └── run.py                # Entry point ✅
 ├── frontend/
 │   ├── src/
 │   │   ├── components/       # React components
-│   │   │   ├── HealthPanel.jsx
-│   │   │   ├── DebrisPanel.jsx
-│   │   │   └── DiscoveryPanel.jsx
-│   │   ├── services/         # API client (to be implemented)
+│   │   │   ├── HealthPanel.jsx    # ✅ Live telemetry
+│   │   │   ├── DebrisPanel.jsx    # ✅ Risk table
+│   │   │   └── DiscoveryPanel.jsx # (TODO)
+│   │   ├── services/         
+│   │   │   └── api.js        # API client ✅
 │   │   ├── hooks/            # Custom React hooks (to be implemented)
 │   │   ├── styles/
-│   │   │   └── index.css     # Tailwind CSS
-│   │   ├── App.jsx           # Main app component
-│   │   └── main.jsx          # Entry point
-│   ├── package.json
-│   └── vite.config.js
+│   │   │   └── index.css     # Tailwind CSS ✅
+│   │   ├── App.jsx           # Main app component ✅
+│   │   └── main.jsx          # Entry point ✅
+│   ├── package.json          # Dependencies ✅
+│   └── vite.config.js        # Vite config ✅
 ├── data/
 │   ├── tles/                 # Cached TLE data
 │   └── tess/                 # Cached TESS light curves
@@ -122,6 +146,8 @@ apogee/
 ├── docs/                     # Documentation
 ├── APOGEE_PRD.md            # Product Requirements Document
 ├── IMPLEMENTATION_PLAN.md    # Detailed implementation plan
+├── PHASE1_COMPLETE.md       # Phase 1 testing guide ✅
+├── PHASE2_COMPLETE.md       # Phase 2 testing guide ✅
 └── README.md                # This file
 ```
 
@@ -129,11 +155,11 @@ apogee/
 
 ### Tables
 
-1. **telemetry_reading** - Simulated spacecraft telemetry
-2. **tracked_object** - Orbital objects from CelesTrak
-3. **conjunction_risk** - Computed collision risks
-4. **transit_candidate** - TESS exoplanet detections
-5. **alerts** - Shared alerts table (INTEGRATION PROOF)
+1. **telemetry_reading** - Simulated spacecraft telemetry ✅
+2. **tracked_object** - Orbital objects from CelesTrak ✅
+3. **conjunction_risk** - Computed collision risks ✅
+4. **transit_candidate** - TESS exoplanet detections (TODO)
+5. **alerts** - Shared alerts table (INTEGRATION PROOF) ✅
 
 The `alerts` table is the core integration proof, storing both health anomalies and debris conjunctions with `response_category` tags.
 
@@ -143,23 +169,22 @@ The `alerts` table is the core integration proof, storing both health anomalies 
 - FastAPI - Modern Python web framework
 - SQLAlchemy - ORM for database
 - SQLite - Zero-ops database
-- sgp4 - Orbital propagation
-- scikit-learn - ML (IsolationForest, Random Forest)
-- lightkurve - TESS data processing
+- sgp4 - Orbital propagation ✅
+- scikit-learn - ML (IsolationForest ✅, Random Forest for Phase 3)
+- lightkurve - TESS data processing (Phase 3)
 
 ### Frontend
 - React 18 - UI framework
 - Vite - Build tool
 - Tailwind CSS - Styling
-- Recharts - Data visualization
-- Axios - HTTP client
+- Recharts - Data visualization (Phase 3)
+- WebSocket - Real-time streaming ✅
 
 ### Additional (Phase 4)
 - IBM watsonx/Granite - Alert explanations
-- KokonutUI - Liquid-glass UI components
+- Carbon Design System - IBM UI components
 - Framer Motion - Animations
-- Bklit - Advanced charts
-- Anime.js - Light curve animations
+- Advanced charting libraries
 
 ## 📊 Implementation Phases
 
@@ -169,19 +194,19 @@ The `alerts` table is the core integration proof, storing both health anomalies 
 - Basic routing
 - Placeholder UI
 
-### Phase 1: Debris Risk (Next - 3-4 days)
+### Phase 1: Debris Risk ✅ COMPLETE
 - CelesTrak integration
 - SGP4 propagation
 - Risk scoring
 - Sortable risk table
 
-### Phase 2: Health Monitor (4-5 days)
+### Phase 2: Health Monitor ✅ COMPLETE
 - Telemetry simulator
 - IsolationForest anomaly detection
 - WebSocket streaming
 - Unified alerts feed
 
-### Phase 3: Discovery Module (3-4 days)
+### Phase 3: Discovery Module (Next - 3-4 days)
 - TESS data caching
 - BLS periodogram
 - ML vetting classifier
@@ -199,39 +224,44 @@ The `alerts` table is the core integration proof, storing both health anomalies 
 
 ## ⚠️ Critical Requirements
 
-1. **IBM Bob must be core build tool** (eligibility requirement)
-2. **IsolationForest is mandatory** (no z-score fallback)
-3. **ML vetting required for Discovery** (BLS alone is not ML)
-4. **Unified alerts feed is integration proof** (don't skip)
-5. **All disclaimers must be visible** (TLE uncertainty, simulated telemetry)
+1. **IBM Bob must be core build tool** (eligibility requirement) ✅
+2. **IsolationForest is mandatory** (no z-score fallback) ✅
+3. **ML vetting required for Discovery** (BLS alone is not ML) - Phase 3
+4. **Unified alerts feed is integration proof** (don't skip) ✅
+5. **All disclaimers must be visible** (TLE uncertainty ✅, simulated telemetry ✅)
 
 ## 🎯 Success Criteria
 
-- [ ] All 5 phases completed
-- [ ] Debris risk table with real CelesTrak data
-- [ ] Health anomalies detected by IsolationForest
-- [ ] Unified alerts feed showing both sources
-- [ ] Discovery module with ML-vetted transits
-- [ ] Demo runs smoothly (5-7 minutes)
+- [x] Phase 0: Project scaffolding
+- [x] Phase 1: Debris risk module with real data
+- [x] Phase 2: Health monitor with IsolationForest
+- [x] Unified alerts feed (integration proof)
+- [ ] Phase 3: Discovery module with ML vetting
+- [ ] Phase 4: Polish and IBM integrations
+- [ ] Phase 5: Demo preparation
 
-## 📝 Development Notes
+## 📝 Testing Guides
 
-### Phase 0 Completion Checklist
-- ✅ Directory structure created
-- ✅ Backend FastAPI app initialized
-- ✅ Database models defined (all 5 tables)
-- ✅ API routers created (placeholder endpoints)
-- ✅ Frontend React app initialized
-- ✅ Tailwind CSS configured
-- ✅ All three panels created (placeholder content)
-- ✅ Basic navigation working
+- [Phase 1 Testing Guide](./PHASE1_COMPLETE.md) - Debris Risk Module
+- [Phase 2 Testing Guide](./PHASE2_COMPLETE.md) - Health Monitor
 
-### Next Immediate Steps
-1. Implement CelesTrak TLE fetching service
-2. Add SGP4 propagation logic
-3. Create risk scoring algorithm
-4. Build debris risk table UI
-5. Test with ISS data
+## 🚀 Quick Start (After Setup)
+
+1. **Start Backend:**
+   ```bash
+   cd backend && python run.py
+   ```
+
+2. **Start Frontend:**
+   ```bash
+   cd frontend && npm run dev
+   ```
+
+3. **Open Browser:**
+   - Navigate to http://localhost:5173
+   - Try the Debris Risk panel (Phase 1)
+   - Try the Health Monitor panel (Phase 2)
+   - Inject faults to see anomaly detection
 
 ## 🔗 Resources
 

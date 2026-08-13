@@ -48,6 +48,9 @@ def compute_debris_risks_task(spacecraft_id: str, db: Session):
             TrackedObject.norad_id == spacecraft_tle['norad_id']
         ).first()
         
+        valid_keys = ['norad_id', 'name', 'tle_line1', 'tle_line2', 'apogee_km', 'perigee_km', 'last_updated']
+        spacecraft_kwargs = {k: v for k, v in spacecraft_tle.items() if k in valid_keys}
+        
         if spacecraft_obj:
             # Update existing
             spacecraft_obj.name = spacecraft_tle['name']
@@ -58,7 +61,7 @@ def compute_debris_risks_task(spacecraft_id: str, db: Session):
             spacecraft_obj.last_updated = spacecraft_tle['last_updated']
         else:
             # Create new
-            spacecraft_obj = TrackedObject(**spacecraft_tle)
+            spacecraft_obj = TrackedObject(**spacecraft_kwargs)
             db.add(spacecraft_obj)
         
         db.commit()
@@ -76,6 +79,8 @@ def compute_debris_risks_task(spacecraft_id: str, db: Session):
                 TrackedObject.norad_id == obj_data['norad_id']
             ).first()
             
+            obj_kwargs = {k: v for k, v in obj_data.items() if k in valid_keys}
+            
             if obj:
                 # Update existing
                 obj.name = obj_data['name']
@@ -86,7 +91,7 @@ def compute_debris_risks_task(spacecraft_id: str, db: Session):
                 obj.last_updated = obj_data['last_updated']
             else:
                 # Create new
-                obj = TrackedObject(**obj_data)
+                obj = TrackedObject(**obj_kwargs)
                 db.add(obj)
         
         db.commit()
